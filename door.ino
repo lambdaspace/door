@@ -41,8 +41,8 @@ void loop()
 				delay(2000);
 				break;
 			}
-      Serial.print("Unknown:")
-      Serial.println(card)
+      Serial.print("Unknown: ");
+      Serial.println(card);
 		}
 	}
 }
