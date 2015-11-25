@@ -35,12 +35,15 @@ void loop()
 		{
 			if(keys[i] == card)
 			{
-				Serial.print(card);
+				Serial.print("Welcome: ");
+        Serial.println(card);
 				digitalWrite(5, HIGH);
 				//wait 2 seconds before lock the door
 				delay(2000);
 				break;
 			}
+      Serial.print("Unknown:")
+      Serial.println(card)
 		}
 	}
 }
