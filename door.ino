@@ -29,7 +29,6 @@ void loop()
 	{
 		long card = wg.getCode();
 		int i;
-		Serial.print(wg.getCode());
 		//if the code matches to claires card
 		for(i = 0; i < sizeof(keys); i++)
 		{
