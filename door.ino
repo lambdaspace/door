@@ -46,11 +46,13 @@ void loop()
 				break;
 			}
 		}
+		// if card is unknown
 		if(success == false)
 		{
 			unknown_card++;
 			Serial.print("Unknown:");
 			Serial.println(card);
+			//delay depends on the number of times the card is swiped
 			switch (unknown_card)
 			{
 				case 1:
