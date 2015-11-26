@@ -15,7 +15,7 @@ void setup()
 	long card;
 
 }
-//claire's card
+//members card
 long keys[] = { 1234567, 1234568, 1234569 };
 
 int unknown_card = 0;
@@ -31,7 +31,7 @@ void loop()
 	{
 		long card = wg.getCode();
 		int i;
-		//if the code matches to claires card
+		//if the code matches to any members card
 		for(i = 0; i < sizeof(keys); i++)
 		{
 			if(keys[i] == card)
