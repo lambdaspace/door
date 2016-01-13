@@ -5,12 +5,15 @@ WIEGAND wg;
 
 //Variables for pins
 int doorlock = 5;
+int doorsensor = 6; //if sensor not present, connect to ground
+int doorbutton = 7; //if sensor not present, connect to ground
 
 //Global Variables
 //members card - hardcoded
 long keys[] = { 1234567, 1234568, 1234569 };
 //counter for invalid card reads
 int unknown_card_counter = 0; 
+boolean dooropenorclosed = LOW;
 
 void setup()
 {
@@ -18,6 +21,8 @@ void setup()
 	Serial.begin(9600);
 	// the relay where the door's electric strike is connected
 	pinMode(doorlock, OUTPUT);
+	pinMode(doorsensor, INPUT);
+	pinMode(doorbutton, INPUT);
 	//initializing the wg class
 	wg.begin();
 }
@@ -29,6 +34,25 @@ void unlockdoor()
 	//wait 2 seconds before lock the door
 	delay(2000);
 	digitalWrite(doorlock, LOW);
+	return;
+}
+
+void checkmanualopenclose()
+{
+	boolean temp=digitalRead(doorsensor);
+	if (dooropenorclosed!=temp){
+		if (temp) Serial.println("Manual Open"); //might need to switch these
+		else Serial.println("Manual Close");
+		dooropenorclosed=temp;
+		delay(150); //sort of debounce
+	}
+	return;
+}
+
+void checkbutton()
+{
+	while (doorbutton) unlockdoor();
+	return;
 }
 
 void loop()
@@ -36,7 +60,11 @@ void loop()
 	//keep the door locked - also a failsafe
 	digitalWrite(doorlock, LOW);
 	
-	//small delay per loop, so that the wiegand check for card will not occur continuously while on standby - for power purposes
+	checkmanualopenclose();
+	checkbutton();
+	
+	//small delay per loop, so that the wiegand check for card will not occur continuously while on standby
+	//this is for power consumption purposes
 	delay(100);
 	//if a card is read
 	if(wg.available())
@@ -49,7 +77,7 @@ void loop()
 		{
 			if(keys[i] == card) //if this key matches 
 			{
-				Serial.print("\nDoor opened by: "); // record keeping
+				Serial.println("\nOpened:"); // record keeping
 				Serial.println(card);
 				unlockdoor();
 				unknown_card_counter=0; 
@@ -63,9 +91,9 @@ void loop()
 		
 		unknown_card_counter++;
 		//record keeping
-		Serial.print("\nINTRUSION DETECTED!\nUnknown Card Detected: ");
+		Serial.println("Bad Key:");
 		Serial.println(card);
-		Serial.print("Number of consecutive intrusions: ");
+		Serial.println("Consecutive:");
 		Serial.println(unknown_card_counter);
 		
 		//delay depends on the number of times the card is swiped.
