@@ -1,91 +1,79 @@
 #include <Wiegand.h>
 
-// initializing wiegand protocol
+//Initializing wiegand protocol for card reading
 WIEGAND wg;
+
+//Variables for pins
+int doorlock = 5;
+
+//Global Variables
+//members card - hardcoded
+long keys[] = { 1234567, 1234568, 1234569 };
+//counter for invalid card reads
+int unknown_card_counter = 0; 
 
 void setup()
 {
 	//intializing the serial port
 	Serial.begin(9600);
-	// the relay where the electric strike is connected
-	pinMode(5, OUTPUT);
+	// the relay where the door's electric strike is connected
+	pinMode(doorlock, OUTPUT);
 	//initializing the wg class
 	wg.begin();
-	int i;
-	long card;
-
 }
-//members card
-long keys[] = { 1234567, 1234568, 1234569 };
 
-int unknown_card = 0;
-bool success = false;
+
+void unlockdoor()
+{
+	digitalWrite(doorlock, HIGH);
+	//wait 2 seconds before lock the door
+	delay(2000);
+	digitalWrite(doorlock, LOW);
+}
 
 void loop()
 {
-	//keep the door locked
-	digitalWrite(5, LOW);
-
+	//keep the door locked - also a failsafe
+	digitalWrite(doorlock, LOW);
+	
+	//small delay per loop, so that the wiegand check for card will not occur continuously while on standby - for power purposes
+	delay(100);
 	//if a card is read
 	if(wg.available())
 	{
+		//get code of card that was read
 		long card = wg.getCode();
 		int i;
 		//if the code matches to any members card
-		for(i = 0; i < sizeof(keys); i++)
+		for(i = 0; i < sizeof(keys); i++) // for each key in the table of keys
 		{
-			if(keys[i] == card)
+			if(keys[i] == card) //if this key matches 
 			{
-				Serial.print("Welcome: ");
+				Serial.print("\nDoor opened by: "); // record keeping
 				Serial.println(card);
-				digitalWrite(5, HIGH);
-				//wait 2 seconds before lock the door
-				delay(2000);
-				success=true;
-				unknown_card=0;
-				break;
+				unlockdoor();
+				unknown_card_counter=0; 
+				//since we found a valid key, return to the beginning of the loop()
+				return;
 			}
 		}
-		// if card is unknown
-		if(success == false)
-		{
-			unknown_card++;
-			Serial.print("Unknown:");
-			Serial.println(card);
-			//delay depends on the number of times the card is swiped
-			switch (unknown_card)
-			{
-				case 1:
-					delay(1000);
-					break;
-				case 2:
-					delay(1000);
-					break;
-				case 3:
-					Serial.print("WARNING! Intrusion detected: 3\n");
-					delay(1000);
-					break;
-				case 4:
-					Serial.print("WARNING! Intrusion detected: 4\n");
-					delay(2000);
-					break;
-				case 5:
-					Serial.print("WARNING! Intrusion detected: 5\n");
-					delay(2000);
-					break;
-				case 6:
-					Serial.print("WARNING! Intrusion detected: 6\n");
-					delay(3000);
-					break;
-				case 7:
-					Serial.print("WARNING! Intrusion detected: 7\n");
-					break;
-					delay(5000);
-				default:
-					Serial.print("WARNING! Intrusion detected: default\n");
-					delay(10000);
-					break;
-			}
-		}
+		
+		// if there was no "return", the card we read was unknown.
+		// from here on, execute the intrusion detection code
+		
+		unknown_card_counter++;
+		//record keeping
+		Serial.print("\nINTRUSION DETECTED!\nUnknown Card Detected: ");
+		Serial.println(card);
+		Serial.print("Number of consecutive intrusions: ");
+		Serial.println(unknown_card_counter);
+		
+		//delay depends on the number of times the card is swiped.
+		//exponential increase of delay for each wrong swipe. 
+		//delaytime = 1000+66*2^unknown_card_counter - this returns values close to the old switch case
+		int delaytime=1<<unknown_card_counter; // delaytime = 2^unknown_card_counter
+		delaytime*=66;	//delaytime = delaytime * 66
+		delaytime+=1000; //delaytime = delaytime + 1000
+		delay(delaytime);
 	}
 }
